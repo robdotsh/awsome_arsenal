@@ -43,7 +43,6 @@ jobs:
             "04-terraform/modules"
 
             # 05 - Ansible
-            "05-ansible/ansible.cfg"
             "05-ansible/inventory"
             "05-ansible/playbooks"
             "05-ansible/roles"
