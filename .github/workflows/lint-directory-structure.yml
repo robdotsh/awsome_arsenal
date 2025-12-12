@@ -107,7 +107,7 @@ jobs:
       # Step 7: Terraform Security Scan with tfsec
       - name: Terraform Security Scan with tfsec
         run: |
-          TFSEC_VERSION=${TFSEC_VERSION:-"latest"}
+          TFSEC_VERSION="v1.28.14"
           echo "Installing tfsec version: ${TFSEC_VERSION}"
 
           # Install tfsec
