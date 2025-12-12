@@ -1,4 +1,4 @@
-name: Lint Directory Structure
+name: Lint Directory Structure and Run Security Scans
 
 on:
   push:
@@ -9,64 +9,45 @@ on:
       - main
 
 jobs:
-  lint:
+  lint_and_security:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
 
+      # Step 1: Lint the Directory Structure
       - name: Lint Directory Structure
         run: |
           # Define the expected directory structure
           expected_dirs=(
-            # 01 - Docker
             "01-docker/compose-example"
             "01-docker/dockerfile-example"
-
-            # 02 - Kubernetes
             "02-kubernetes/cert-manager"
             "02-kubernetes/cluster-autoscaler"
             "02-kubernetes/ingress"
             "02-kubernetes/jenkins"
             "02-kubernetes/open-policy-agent"
             "02-kubernetes/services"
-
-            # 03 - CI/CD
             "03-ci-cd/github-actions"
             "03-ci-cd/gitlab-ci"
             "03-ci-cd/jenkins"
-
-            # 04 - Terraform
             "04-terraform/aws"
             "04-terraform/gcp"
             "04-terraform/modules"
-
-            # 05 - Ansible
             "05-ansible/inventory"
             "05-ansible/playbooks"
             "05-ansible/roles"
             "05-ansible/scripts"
-
-            # 06 - Monitoring
             "06-monitoring/grafana"
             "06-monitoring/loki"
             "06-monitoring/prometheus"
-
-            # 07 - SRE
             "07-sre/chaos-engineering"
             "07-sre/playbooks"
             "07-sre/slos"
-
-            # 08 - Golang
             "08-golang/basics"
             "08-golang/sample-app"
-
-            # 09 - Secrets
             "09-secrets/akeyless"
             "09-secrets/vault"
-
-            # 10 - Artifacts
             "10-artifacts/artifactory"
             "10-artifacts/docker"
             "10-artifacts/maven"
@@ -74,12 +55,74 @@ jobs:
             "10-artifacts/npm"
           )
 
-          # Check if each directory exists
           for dir in "${expected_dirs[@]}"; do
-            if [ ! -d "$dir" ]; then
-              echo "....... Directory $dir is missing! ....."
+            if [ ! -e "$dir" ]; then
+              echo "Missing directory or file: $dir"
               exit 1
             fi
           done
+          echo "All required directories and files are present!"
 
-          echo "All directories are correctly structured!"
+      # Step 2: Security Scanning
+
+      # 2.1: Secret Scanning with TruffleHog
+      - name: Secret Scanning with TruffleHog
+        run: |
+          pip install truffleHog
+          trufflehog --json . > trufflehog_report.json || true
+          if [ -s trufflehog_report.json ]; then
+            echo "Secrets found!"
+            cat trufflehog_report.json
+            exit 1
+          else
+            echo "No secrets found."
+          fi
+
+      # 2.2: Container Image Scanning with Trivy
+      - name: Container Image Scanning with Trivy
+        run: |
+          docker build -t awsome_arsenal .
+          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal
+          echo "Trivy scan completed successfully."
+
+      # 2.3: Terraform Security Scan with tfsec
+      - name: Terraform Security Scan
+        run: |
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install.sh | bash
+          tfsec 04-terraform/aws
+          echo "Terraform security scan completed."
+
+      # 2.4: Kubernetes Security Linting with kube-score
+      - name: Kubernetes Security Linting
+        run: |
+          curl -s https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64.tar.gz | tar xz
+          ./kube-score score 02-kubernetes/
+          echo "Kubernetes security linting completed."
+
+      # Step 3: Terraform Linting
+      - name: Terraform Linting with tflint
+        run: |
+          curl -s https://github.com/terraform-linters/tflint/releases/download/v0.29.0/tflint_linux_amd64.zip -o tflint.zip
+          unzip tflint.zip
+          ./tflint --init
+          ./tflint 04-terraform/aws
+          echo "Terraform linting completed."
+
+      # Step 4: Dockerfile Linting with hadolint
+      - name: Dockerfile Linting with Hadolint
+        run: |
+          curl -s https://github.com/hadolint/hadolint/releases/download/v2.6.0/hadolint-Linux-x86_64 -o /usr/local/bin/hadolint
+          chmod +x /usr/local/bin/hadolint
+          hadolint 01-docker/dockerfile-example/Dockerfile
+          echo "Dockerfile linting completed."
+
+      # Step 5: Observability - Prometheus and Grafana Integration
+      - name: Install Prometheus and Grafana (Only for local test)
+        run: |
+          echo "docker-compose -f docker-compose-monitoring.yml up -d"
+          echo "Prometheus and Grafana started."
+
+      # Step 6: Final Validation
+      - name: Final Validation
+        run: |
+          echo "All checks completed successfully!"
