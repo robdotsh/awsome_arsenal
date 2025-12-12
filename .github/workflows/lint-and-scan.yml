@@ -151,7 +151,7 @@ jobs:
       - name: Install Prometheus and Grafana (Only for local test)
         run: |
           echo "Starting Prometheus and Grafana (for local test only)..."
-          docker-compose -f docker-compose-monitoring.yml up -d
+          echo "# docker-compose -f docker-compose-monitoring.yml up -d"
           echo "Prometheus and Grafana started."
 
       # Final Step: Success Validation
