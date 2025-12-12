@@ -122,7 +122,19 @@ jobs:
       # Step 8: Kubernetes Security Linting with kube-score
       - name: Kubernetes Security Linting
         run: |
-          curl -s https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64.tar.gz | tar xz
+          # Step 1: Download kube-score
+          curl -s -L https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64.tar.gz -o kube-score_1.11.0_linux_amd64.tar.gz
+
+          # Step 2: Check if the file was downloaded correctly (non-zero size)
+          if [ ! -s kube-score_1.11.0_linux_amd64.tar.gz ]; then
+            echo "Error: Failed to download kube-score. Exiting."
+            exit 1
+          fi
+
+          # Step 3: Extract the tar.gz file
+          tar -xzvf kube-score_1.11.0_linux_amd64.tar.gz
+
+          # Step 4: Run the kube-score linting
           ./kube-score score 02-kubernetes/
           echo "Kubernetes security linting completed."
 
