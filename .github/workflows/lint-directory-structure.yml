@@ -10,6 +10,7 @@ on:
 jobs:
   lint_and_security:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -77,15 +78,19 @@ jobs:
             echo "No secrets found."
           fi
 
-      # 2.2: Container Image Scanning with Trivy
-      - name: Container Image Scanning with Trivy
+      # 2.2: Install Trivy and Container Image Scanning
+      - name: Install Trivy and Scan Container Image
         run: |
-          # Install Trivy (Container scanner)
+          echo "# Install Trivy (Container scanner)
           curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.25.0/trivy_0.25.0_Linux-64bit.tar.gz | tar -xz
           sudo mv trivy /usr/local/bin/
 
-          docker build -t awsome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
-          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal
+          # Build Docker image
+          docker build -t awesome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
+
+          # Run Trivy scan
+          trivy image --exit-code 1 --severity HIGH,CRITICAL awesome_arsenal
+          "
           echo "Trivy scan completed successfully."
 
       # 2.3: Terraform Security Scan with tfsec
