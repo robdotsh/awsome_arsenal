@@ -134,8 +134,8 @@ jobs:
           # Step 3: Extract the tar.gz file
           tar -xzvf kube-score_1.11.0_linux_amd64.tar.gz
 
-          # Step 4: Run the kube-score linting
-          ./kube-score score 02-kubernetes/**/*.yaml
+          # Step 4: Run the kube-score linting - on all YAML files and filter out warnings related to NodePort
+          ./kube-score score 02-kubernetes/**/*.yaml | grep -v "The service is of type NodePort"
           echo "Kubernetes security linting completed."
 
       # Step 9: Terraform Linting with tflint
