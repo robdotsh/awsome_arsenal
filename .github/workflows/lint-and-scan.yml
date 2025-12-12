@@ -96,10 +96,10 @@ jobs:
           curl -sfL https://github.com/aquasecurity/trivy/releases/download/${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | tar -xz
           sudo mv trivy /usr/local/bin/
           # Build Docker image for scanning
-          echo " # docker build -t awsome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
+          docker build -t awsome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
 
           # Run Trivy scan for vulnerabilities
-          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal"
+          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal
 
           echo "Trivy scan completed successfully."
 
