@@ -92,7 +92,8 @@ jobs:
       # Step 6: Install Trivy and Scan Docker Image for Vulnerabilities
       - name: Install Trivy and Scan Container Image
         run: |
-          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.25.0/trivy_0.25.0_Linux-64bit.tar.gz | tar -xz
+          TRIVY_VERSION="0.25.0"
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | tar -xz
           sudo mv trivy /usr/local/bin/
 
           # Build Docker image
@@ -118,21 +119,23 @@ jobs:
       # Step 8: Kubernetes Security Linting with kube-score
       - name: Kubernetes Security Linting
         run: |
-          curl -s -L https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64.tar.gz -o kube-score_1.11.0_linux_amd64.tar.gz
-          if [ ! -s kube-score_1.11.0_linux_amd64.tar.gz ]; then
+          KSCORE_VERSION="1.1.0"
+          curl -s -L https://github.com/zegl/kube-score/releases/download/v${KSCORE_VERSION}/kube-score_${KSCORE_VERSION}_linux_amd64.tar.gz -o kube-score_${KSCORE_VERSION}_linux_amd64.tar.gz
+          if [ ! -s kube-score_${KSCORE_VERSION}_linux_amd64.tar.gz ]; then
             echo "Error: Failed to download kube-score. Exiting."
             exit 1
           fi
 
           # Extract and run kube-score linting
-          tar -xzvf kube-score_1.11.0_linux_amd64.tar.gz
+          tar -xzvf kube-score_${KSCORE_VERSION}_linux_amd64.tar.gz
           ./kube-score score 02-kubernetes/**/*.yaml | grep -v "The service is of type NodePort"
           echo "Kubernetes security linting completed successfully."
 
       # Step 9: Run Terraform Linting with tflint
       - name: Terraform Linting with tflint
         run: |
-          curl -s -L https://github.com/terraform-linters/tflint/releases/download/v0.60.0/tflint_linux_amd64.zip -o tflint.zip
+          TFLINT_VERSION="0.60.0"
+          curl -s -L https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip -o tflint.zip
           unzip tflint.zip -d /usr/local/bin/
           chmod +x /usr/local/bin/tflint
           tflint --init
@@ -142,7 +145,8 @@ jobs:
       # Step 10: Dockerfile Linting with Hadolint
       - name: Dockerfile Linting with Hadolint
         run: |
-          curl -s https://github.com/hadolint/hadolint/releases/download/v2.6.0/hadolint-Linux-x86_64 -o /usr/local/bin/hadolint
+          HADOLINT_VERSION="2.6.0"
+          curl -s https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-x86_64 -o /usr/local/bin/hadolint
           chmod +x /usr/local/bin/hadolint
           hadolint 01-docker/dockerfile-example/Dockerfile
           echo "Dockerfile linting completed successfully."
