@@ -1,7 +1,7 @@
 # Create the SNS topic
 resource "aws_sns_topic" "user_updates" {
   name              = var.sns_topic_name
-  kms_master_key_id = var.kms_key_id
+  kms_master_key_id = aws_kms_alias.sns_key_alias.name
 
   delivery_policy = <<EOF
 {
@@ -52,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "sns_publish_role_attachment" {
 resource "aws_sqs_queue" "sns_dlq" {
   name = var.sqs_dlq_name
 
-  kms_master_key_id = var.kms_key_id
+  kms_master_key_id = aws_kms_alias.sns_key_alias.name
 }
 
 # Attach the Dead Letter Queue to the SNS Topic
@@ -65,9 +65,44 @@ resource "aws_sns_topic_subscription" "dlq_subscription" {
   raw_message_delivery = var.raw_message_delivery
 }
 
-# CloudWatch Metric Filter for Monitoring SNS Activity
+resource "aws_kms_key" "sns_key" {
+  description         = "Customer Managed Key for SNS"
+  enable_key_rotation = true
+  key_usage           = "ENCRYPT_DECRYPT"
+
+  # Optional: Custom key policy
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "kms:Encrypt"
+        Resource = "*"
+        Principal = {
+          AWS = "*"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_kms_alias" "sns_key_alias" {
+  name          = "alias/sns-topic-key"
+  target_key_id = aws_kms_key.sns_key.key_id
+}
+
+# Create a KMS Key for CMK encryption
+resource "aws_kms_key" "cloudwatch_log_key" {
+  description             = "KMS key for CloudWatch Log Group encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+}
+
+# CloudWatch Metric Filter for Monitoring SNS Activity with CMK encryption enabled
 resource "aws_cloudwatch_log_group" "sns_log_group" {
-  name = var.cloudwatch_log_group_name
+  name              = var.cloudwatch_log_group_name
+  kms_key_id        = aws_kms_key.cloudwatch_log_key.arn
+  retention_in_days = 1
 }
 
 resource "aws_cloudwatch_log_stream" "sns_log_stream" {

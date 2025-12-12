@@ -51,12 +51,6 @@ variable "sns_topic_name" {
   default     = "user-updates-topic"
 }
 
-variable "kms_key_id" {
-  type        = string
-  description = "The KMS key to use for SNS topic encryption"
-  default     = "alias/aws/sns"
-}
-
 variable "sns_publish_role" {
   type        = string
   description = "The IAM role that is allowed to publish"
