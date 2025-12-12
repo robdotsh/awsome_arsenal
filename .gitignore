@@ -1,0 +1,62 @@
+# Ignore Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+
+# Ignore Kubernetes configuration files
+.kube/
+
+# Ignore Docker-related files
+**/docker-compose.override.yml
+**/Dockerfile*
+**/.docker/
+
+# Ignore Ansible files (local configurations, secrets, etc.)
+*.retry
+*.vault
+*.ansible
+*.vagrant
+
+# Ignore Go related files
+*.exe
+*.test
+*.out
+bin/
+obj/
+
+# Ignore IDE/Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+
+# Ignore Node.js modules and artifacts
+node_modules/
+
+# Ignore environment files and sensitive data
+.env
+*.env
+*.env.local
+*.env.*.local
+
+# Ignore secret management tools
+.secret/
+.secrets/
+
+# Ignore generated artifacts
+*.tar.gz
+*.zip
+*.tgz
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore unnecessary files from GitHub Actions runner (logs, temp directories, etc.)
+**/*.log
+**/*.tmp
+**/terraform/*.plan
+**/terraform/.terraform/

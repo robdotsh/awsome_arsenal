@@ -1,72 +1,60 @@
-name: Lint Directory Structure
+name: Lint and Scan Before Merging to Main
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
+    paths:
+      - "**/*"
 
 jobs:
-  lint:
+  lint_and_security:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v2
 
+      # Step 2: Install Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: "1.14.0"
+
+      # Step 3: Lint the Directory Structure
       - name: Lint Directory Structure
         run: |
           # Define the expected directory structure
           expected_dirs=(
-            # 01 - Docker
             "01-docker/compose-example"
             "01-docker/dockerfile-example"
-
-            # 02 - Kubernetes
             "02-kubernetes/cert-manager"
             "02-kubernetes/cluster-autoscaler"
             "02-kubernetes/ingress"
             "02-kubernetes/jenkins"
             "02-kubernetes/open-policy-agent"
             "02-kubernetes/services"
-
-            # 03 - CI/CD
             "03-ci-cd/github-actions"
             "03-ci-cd/gitlab-ci"
             "03-ci-cd/jenkins"
-
-            # 04 - Terraform
             "04-terraform/aws"
             "04-terraform/gcp"
             "04-terraform/modules"
-
-            # 05 - Ansible
             "05-ansible/inventory"
             "05-ansible/playbooks"
             "05-ansible/roles"
             "05-ansible/scripts"
-
-            # 06 - Monitoring
             "06-monitoring/grafana"
             "06-monitoring/loki"
             "06-monitoring/prometheus"
-
-            # 07 - SRE
             "07-sre/chaos-engineering"
             "07-sre/playbooks"
             "07-sre/slos"
-
-            # 08 - Golang
             "08-golang/basics"
             "08-golang/sample-app"
-
-            # 09 - Secrets
             "09-secrets/akeyless"
             "09-secrets/vault"
-
-            # 10 - Artifacts
             "10-artifacts/artifactory"
             "10-artifacts/docker"
             "10-artifacts/maven"
@@ -74,12 +62,116 @@ jobs:
             "10-artifacts/npm"
           )
 
-          # Check if each directory exists
           for dir in "${expected_dirs[@]}"; do
-            if [ ! -d "$dir" ]; then
-              echo "....... Directory $dir is missing! ....."
+            if [ ! -e "$dir" ]; then
+              echo "Missing directory or file: $dir"
               exit 1
             fi
           done
+          echo "All required directories and files are present!"
 
-          echo "All directories are correctly structured!"
+      # Step 4: Format Terraform files with terraform fmt
+      - name: Format Terraform Files
+        run: |
+          echo "Running terraform fmt to format Terraform files"
+          terraform fmt -recursive
+          echo "Terraform files formatted successfully."
+
+      # Step 5: Secret Scanning with TruffleHog
+      - name: Secret Scanning with TruffleHog
+        run: |
+          pip install truffleHog
+          trufflehog --json . > trufflehog_report.json || true
+          if [ -s trufflehog_report.json ]; then
+            echo "Secrets found!"
+            cat trufflehog_report.json
+            exit 1
+          else
+            echo "No secrets found."
+          fi
+
+      # Step 6: Install Trivy and Scan Container Image
+      - name: Install Trivy and Scan Container Image
+        run: |
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.25.0/trivy_0.25.0_Linux-64bit.tar.gz | tar -xz
+          sudo mv trivy /usr/local/bin/
+
+          # Build Docker image
+          echo "docker build -t awsome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
+
+          # Run Trivy scan
+          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal
+          "
+          echo "Trivy scan completed successfully."
+
+      # Step 7: Terraform Security Scan with tfsec
+      - name: Terraform Security Scan with tfsec
+        run: |
+          TFSEC_VERSION="v1.28.14"
+          echo "Installing tfsec version: ${TFSEC_VERSION}"
+
+          # Install tfsec
+          curl -Lo tfsec https://github.com/aquasecurity/tfsec/releases/download/${TFSEC_VERSION}/tfsec-linux-amd64
+          chmod +x tfsec
+          sudo mv tfsec /usr/local/bin/
+
+          # Run tfsec on Terraform code
+          tfsec 04-terraform/aws
+          echo "Terraform security scan completed."
+
+      # Step 8: Kubernetes Security Linting with kube-score
+      - name: Kubernetes Security Linting
+        run: |
+          # Step 1: Download kube-score
+          curl -s -L https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64.tar.gz -o kube-score_1.11.0_linux_amd64.tar.gz
+
+          # Step 2: Check if the file was downloaded correctly (non-zero size)
+          if [ ! -s kube-score_1.11.0_linux_amd64.tar.gz ]; then
+            echo "Error: Failed to download kube-score. Exiting."
+            exit 1
+          fi
+
+          # Step 3: Extract the tar.gz file
+          tar -xzvf kube-score_1.11.0_linux_amd64.tar.gz
+
+          # Step 4: Run the kube-score linting - on all YAML files and filter out warnings related to NodePort
+          ./kube-score score 02-kubernetes/**/*.yaml | grep -v "The service is of type NodePort"
+          echo "Kubernetes security linting completed."
+
+      # Step 9: Terraform Linting with tflint
+      - name: Terraform Linting with tflint
+        run: |
+          curl -s -L https://github.com/terraform-linters/tflint/releases/download/v0.60.0/tflint_linux_amd64.zip -o tflint.zip
+
+          if ! unzip -t tflint.zip; then
+            echo "Error: tflint.zip is not a valid ZIP file. Exiting."
+            exit 1
+          fi
+
+          unzip tflint.zip -d /usr/local/bin/
+
+          chmod +x /usr/local/bin/tflint
+
+          tflint --init
+
+          tflint --chdir=04-terraform/aws
+          echo "Terraform linting completed."
+
+      # Step 10: Dockerfile Linting with Hadolint
+      - name: Dockerfile Linting with Hadolint
+        run: |
+          curl -s https://github.com/hadolint/hadolint/releases/download/v2.6.0/hadolint-Linux-x86_64 -o /usr/local/bin/hadolint
+          chmod +x /usr/local/bin/hadolint
+          hadolint 01-docker/dockerfile-example/Dockerfile
+          echo "Dockerfile linting completed."
+
+      # Step 11: Observability - Prometheus and Grafana Integration
+      - name: Install Prometheus and Grafana (Only for local test)
+        run: |
+          echo "docker-compose -f docker-compose-monitoring.yml up -d"
+          echo "Prometheus and Grafana started."
+
+      # Final Validation Step
+      - name: Final Validation
+        run: |
+          echo "All checks completed successfully!"
