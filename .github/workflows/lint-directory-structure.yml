@@ -12,10 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      # Step 1: Lint the Directory Structure
+      # Step 2: Install Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: '1.14.0'
+
+      # Step 3: Lint the Directory Structure
       - name: Lint Directory Structure
         run: |
           # Define the expected directory structure
@@ -63,9 +70,14 @@ jobs:
           done
           echo "All required directories and files are present!"
 
-      # Step 2: Security Scanning
+      # Step 4: Format Terraform files with terraform fmt
+      - name: Format Terraform Files
+        run: |
+          echo "Running terraform fmt to format Terraform files"
+          terraform fmt -recursive
+          echo "Terraform files formatted successfully."
 
-      # 2.1: Secret Scanning with TruffleHog
+      # Step 5: Secret Scanning with TruffleHog
       - name: Secret Scanning with TruffleHog
         run: |
           pip install truffleHog
@@ -78,57 +90,43 @@ jobs:
             echo "No secrets found."
           fi
 
-      # 2.2: Install Trivy and Container Image Scanning
+      # Step 6: Install Trivy and Scan Container Image
       - name: Install Trivy and Scan Container Image
         run: |
-          echo "# Install Trivy (Container scanner)
           curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.25.0/trivy_0.25.0_Linux-64bit.tar.gz | tar -xz
           sudo mv trivy /usr/local/bin/
 
           # Build Docker image
-          docker build -t awesome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
+          echo "docker build -t awsome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
 
           # Run Trivy scan
-          trivy image --exit-code 1 --severity HIGH,CRITICAL awesome_arsenal
+          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal
           "
           echo "Trivy scan completed successfully."
 
-      # 2.3: Terraform Security Scan with tfsec
+      # Step 7: Terraform Security Scan with tfsec
       - name: Terraform Security Scan with tfsec
         run: |
-          # Define the tfsec version (default to latest if not specified)
           TFSEC_VERSION=${TFSEC_VERSION:-"latest"}
-
           echo "Installing tfsec version: ${TFSEC_VERSION}"
 
-          # Install tfsec by downloading the binary from GitHub Releases
-          if [ "${TFSEC_VERSION}" = "latest" ]; then
-            # Get the latest release tag
-            TFSEC_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest | jq -r .tag_name)
-          fi
-
-          # Download the tfsec binary based on the system architecture (Linux/AMD64)
+          # Install tfsec
           curl -Lo tfsec https://github.com/aquasecurity/tfsec/releases/download/${TFSEC_VERSION}/tfsec-linux-amd64
-
-          # Make tfsec executable
           chmod +x tfsec
-
-          # Move the binary to a directory in the PATH
           sudo mv tfsec /usr/local/bin/
 
-          # Run tfsec security scan on the Terraform code
+          # Run tfsec on Terraform code
           tfsec 04-terraform/aws
-
           echo "Terraform security scan completed."
 
-      # 2.4: Kubernetes Security Linting with kube-score
+      # Step 8: Kubernetes Security Linting with kube-score
       - name: Kubernetes Security Linting
         run: |
           curl -s https://github.com/zegl/kube-score/releases/download/v1.11.0/kube-score_1.11.0_linux_amd64.tar.gz | tar xz
           ./kube-score score 02-kubernetes/
           echo "Kubernetes security linting completed."
 
-      # Step 3: Terraform Linting
+      # Step 9: Terraform Linting with tflint
       - name: Terraform Linting with tflint
         run: |
           curl -s https://github.com/terraform-linters/tflint/releases/download/v0.29.0/tflint_linux_amd64.zip -o tflint.zip
@@ -137,7 +135,7 @@ jobs:
           ./tflint 04-terraform/aws
           echo "Terraform linting completed."
 
-      # Step 4: Dockerfile Linting with hadolint
+      # Step 10: Dockerfile Linting with Hadolint
       - name: Dockerfile Linting with Hadolint
         run: |
           curl -s https://github.com/hadolint/hadolint/releases/download/v2.6.0/hadolint-Linux-x86_64 -o /usr/local/bin/hadolint
@@ -145,13 +143,13 @@ jobs:
           hadolint 01-docker/dockerfile-example/Dockerfile
           echo "Dockerfile linting completed."
 
-      # Step 5: Observability - Prometheus and Grafana Integration
+      # Step 11: Observability - Prometheus and Grafana Integration
       - name: Install Prometheus and Grafana (Only for local test)
         run: |
           echo "docker-compose -f docker-compose-monitoring.yml up -d"
           echo "Prometheus and Grafana started."
 
-      # Step 6: Final Validation
+      # Final Validation Step
       - name: Final Validation
         run: |
           echo "All checks completed successfully!"
