@@ -154,7 +154,7 @@ jobs:
 
           tflint --init
 
-          tflint 04-terraform/aws
+          tflint --chdir=04-terraform/aws
           echo "Terraform linting completed."
 
       # Step 10: Dockerfile Linting with Hadolint
