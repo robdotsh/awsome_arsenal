@@ -80,7 +80,7 @@ jobs:
       # 2.2: Container Image Scanning with Trivy
       - name: Container Image Scanning with Trivy
         run: |
-          docker build -t awsome_arsenal .
+          docker build -t awesome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
           trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal
           echo "Trivy scan completed successfully."
 
