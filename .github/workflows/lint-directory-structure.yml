@@ -141,7 +141,7 @@ jobs:
       # Step 9: Terraform Linting with tflint
       - name: Terraform Linting with tflint
         run: |
-          curl -s https://github.com/terraform-linters/tflint/releases/download/v0.29.0/tflint_linux_amd64.zip -o tflint.zip
+          curl -s https://github.com/terraform-linters/tflint/releases/download/v0.60.0/tflint_linux_amd64.zip -o tflint.zip
           unzip tflint.zip
           ./tflint --init
           ./tflint 04-terraform/aws
