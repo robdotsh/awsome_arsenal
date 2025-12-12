@@ -94,24 +94,31 @@ jobs:
           echo "Trivy scan completed successfully."
 
       # 2.3: Terraform Security Scan with tfsec
-      - name: Terraform Security Scan
+      - name: Terraform Security Scan with tfsec
         run: |
           # Define the tfsec version (default to latest if not specified)
           TFSEC_VERSION=${TFSEC_VERSION:-"latest"}
 
           echo "Installing tfsec version: ${TFSEC_VERSION}"
 
-          # Install tfsec by passing the version as an argument to install.sh
-          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install.sh | bash -s ${TFSEC_VERSION}
+          # Install tfsec by downloading the binary from GitHub Releases
+          if [ "${TFSEC_VERSION}" = "latest" ]; then
+            # Get the latest release tag
+            TFSEC_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest | jq -r .tag_name)
+          fi
 
-          # Change the directory to tfsec (./cmd/tfsec) before running go build
-          cd ./cmd/tfsec
+          # Download the tfsec binary based on the system architecture (Linux/AMD64)
+          curl -Lo tfsec https://github.com/aquasecurity/tfsec/releases/download/${TFSEC_VERSION}/tfsec-linux-amd64
 
-          # Go back to the root directory
-          cd ../../
+          # Make tfsec executable
+          chmod +x tfsec
+
+          # Move the binary to a directory in the PATH
+          sudo mv tfsec /usr/local/bin/
 
           # Run tfsec security scan on the Terraform code
           tfsec 04-terraform/aws
+
           echo "Terraform security scan completed."
 
       # 2.4: Kubernetes Security Linting with kube-score
