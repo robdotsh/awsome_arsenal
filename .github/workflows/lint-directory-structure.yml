@@ -141,10 +141,20 @@ jobs:
       # Step 9: Terraform Linting with tflint
       - name: Terraform Linting with tflint
         run: |
-          curl -s https://github.com/terraform-linters/tflint/releases/download/v0.60.0/tflint_linux_amd64.zip -o tflint.zip
-          unzip tflint.zip
-          ./tflint --init
-          ./tflint 04-terraform/aws
+          curl -s -L https://github.com/terraform-linters/tflint/releases/download/v0.60.0/tflint_linux_amd64.zip -o tflint.zip
+
+          if ! unzip -t tflint.zip; then
+            echo "Error: tflint.zip is not a valid ZIP file. Exiting."
+            exit 1
+          fi
+
+          unzip tflint.zip -d /usr/local/bin/
+
+          chmod +x /usr/local/bin/tflint
+
+          tflint --init
+
+          tflint 04-terraform/aws
           echo "Terraform linting completed."
 
       # Step 10: Dockerfile Linting with Hadolint
