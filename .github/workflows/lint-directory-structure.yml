@@ -20,33 +20,59 @@ jobs:
         run: |
           # Define the expected directory structure
           expected_dirs=(
-            "01-docker/dockerfile-example"
+            # 01 - Docker
             "01-docker/compose-example"
-            "02-kubernetes/cluster-autoscaler"
-            "02-kubernetes/open-policy-agent"
+            "01-docker/dockerfile-example"
+
+            # 02 - Kubernetes
             "02-kubernetes/cert-manager"
-            # "02-kubernetes/services"
+            "02-kubernetes/cluster-autoscaler"
             "02-kubernetes/ingress"
-            "03-ci-cd/jenkins"
+            "02-kubernetes/jenkins"
+            "02-kubernetes/open-policy-agent"
+            "02-kubernetes/services"
+
+            # 03 - CI/CD
             "03-ci-cd/github-actions"
             "03-ci-cd/gitlab-ci"
+            "03-ci-cd/jenkins"
+
+            # 04 - Terraform
             "04-terraform/aws"
             "04-terraform/gcp"
             "04-terraform/modules"
-            "05-ansible/roles"
+
+            # 05 - Ansible
+            "05-ansible/ansible.cfg"
+            "05-ansible/inventory"
             "05-ansible/playbooks"
-            "06-monitoring/prometheus"
+            "05-ansible/roles"
+            "05-ansible/scripts"
+
+            # 06 - Monitoring
             "06-monitoring/grafana"
             "06-monitoring/loki"
-            "07-sre/slos"
-            "07-sre/playbooks"
+            "06-monitoring/prometheus"
+
+            # 07 - SRE
             "07-sre/chaos-engineering"
+            "07-sre/playbooks"
+            "07-sre/slos"
+
+            # 08 - Golang
             "08-golang/basics"
             "08-golang/sample-app"
-            "09-secrets/secrets"
-            "10-artifacts/nexus"
+
+            # 09 - Secrets
+            "09-secrets/akeyless"
+            "09-secrets/vault"
+
+            # 10 - Artifacts
             "10-artifacts/artifactory"
-            "10-artifacts/akeyless"
+            "10-artifacts/docker"
+            "10-artifacts/maven"
+            "10-artifacts/nexus"
+            "10-artifacts/npm"
           )
 
           # Check if each directory exists
