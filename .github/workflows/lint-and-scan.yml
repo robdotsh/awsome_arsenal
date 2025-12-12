@@ -95,13 +95,12 @@ jobs:
           TRIVY_VERSION="v0.25.0"
           curl -sfL https://github.com/aquasecurity/trivy/releases/download/${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | tar -xz
           sudo mv trivy /usr/local/bin/
-          echo "
           # Build Docker image for scanning
-          docker build -t awsome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
+          echo " # docker build -t awsome_arsenal -f 01-docker/dockerfile-example/Dockerfile .
 
           # Run Trivy scan for vulnerabilities
-          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal
-          "
+          trivy image --exit-code 1 --severity HIGH,CRITICAL awsome_arsenal"
+
           echo "Trivy scan completed successfully."
 
       # Step 7: Run Terraform Security Scan with tfsec
