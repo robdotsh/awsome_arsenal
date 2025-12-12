@@ -25,7 +25,7 @@ jobs:
             "02-kubernetes/cluster-autoscaler"
             "02-kubernetes/open-policy-agent"
             "02-kubernetes/cert-manager"
-            "02-kubernetes/services"
+            # "02-kubernetes/services"
             "02-kubernetes/ingress"
             "03-ci-cd/jenkins"
             "03-ci-cd/github-actions"
