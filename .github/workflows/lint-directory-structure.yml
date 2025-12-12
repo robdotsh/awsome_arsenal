@@ -1,12 +1,11 @@
-name: Lint Directory Structure and Run Security Scans
+name: Lint and Scan Before Merging to Main
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
+    paths:
+      - '**/*'
 
 jobs:
   lint_and_security:
