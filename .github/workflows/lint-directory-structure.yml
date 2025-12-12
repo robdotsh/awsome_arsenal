@@ -43,7 +43,7 @@ jobs:
             "07-sre/chaos-engineering"
             "08-golang/basics"
             "08-golang/sample-app"
-            "09-secrets/akeyless"
+            "09-secrets/secrets"
             "10-artifacts/nexus"
             "10-artifacts/artifactory"
             "10-artifacts/akeyless"
