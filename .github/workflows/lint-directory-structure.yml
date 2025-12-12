@@ -104,6 +104,9 @@ jobs:
           # Install tfsec by passing the version as an argument to install.sh
           curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install.sh | bash -s ${TFSEC_VERSION}
 
+          # Change the directory to tfsec (./cmd/tfsec) before running go build
+          cd ./cmd/tfsec
+
           # Go back to the root directory
           cd ../../
 
