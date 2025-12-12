@@ -1,16 +1,16 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
+	"fmt"
+	"net/http"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Welcome to the awsome_arsenal Go API!")
+	fmt.Fprintf(w, "Welcome to the awesome_arsenal Go API!")
 }
 
 func main() {
-    http.HandleFunc("/", handler)
-    fmt.Println("Server running on port 8080...")
-    http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/", handler)
+	fmt.Println("Server running on port 8080...")
+	http.ListenAndServe(":8080", nil)
 }

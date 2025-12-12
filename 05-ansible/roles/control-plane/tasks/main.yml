@@ -1,0 +1,106 @@
+---
+- name: Create crictl command config file - control-plane node
+  template:
+    src: "{{item}}.j2"
+    dest: /etc/{{item}}
+    mode: "0644"
+  with_items:
+    - crictl.yaml
+  become: true
+
+- name: Run kubeadm reset --force if kubeadm is installed
+  command: kubeadm reset --force
+  become: true
+  when: "'kubeadm' in ansible_playbook_python | lower"
+
+- name: Upload kubeadm.yaml config file - control-plane node
+  template:
+    src: "{{item}}.j2"
+    dest: /home/{{ansible_user}}/{{item}}
+    mode: "0644"
+  with_items:
+    - kubeadm.yaml
+  become: true
+
+# # These address ranges are examples
+# kubeadm init --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/16
+
+# Initializing control-plane
+- name: Initializing control-plane node
+  shell: kubeadm init --config /home/{{ansible_user}}/kubeadm.yaml --upload-certs --v=6 |tee /home/{{ansible_user}}/kubeadm-join-command
+  # shell: kubeadm init --pod-network-cidr={{ClusterCIDR}} --upload-certs --v=6 |tee /home/{{ansible_user}}/kubeadm-join-command
+  become: true
+
+- name: Create recursively update .kube directory owner
+  file:
+    path: /home/{{ansible_user}}/.kube
+    state: directory
+    recurse: yes
+    owner: ubuntu
+    group: ubuntu
+
+## KubeConfig Admin
+- name: admin.kubeconfig
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/{{ansible_user}}/.kube/config
+    remote_src: yes
+  become: true
+
+- name: sudo chown $(id -u):$(id -g) /home/{{ansible_user}}/.kube/config
+  file:
+    path: /home/{{ansible_user}}/.kube/config
+    owner: ubuntu
+    group: ubuntu
+  become: true
+
+- name: Pull down Kubeconfig File
+  ansible.builtin.fetch:
+    src: /home/{{ansible_user}}/.kube/config
+    dest: /Users/muze/.kube/config-{{inventory_hostname}}
+    flat: yes
+
+- name: Waiting for control-plane node - {{inventory_hostname}} to be ready ... && sleep 10
+  wait_for:
+    host: "{{groups['control_plane'] | map('extract', hostvars, 'ansible_host') | join(',')}}"
+    port: 6443
+    delay: 20
+
+  # Install Calico
+- name: Copying Addons - Tigera Calico file to control-plane node
+  template:
+    src: "{{item}}.j2"
+    dest: /home/{{ansible_user}}/{{item}}
+    mode: "0644"
+    owner: ubuntu
+    group: ubuntu
+  with_items:
+    - calico-cr.yaml
+  become: true
+  any_errors_fatal: true
+
+- name: Uploading Addons - Tigera Calico Operator
+  ansible.builtin.copy:
+    src: files/tigera-operator.yaml
+    dest: /home/{{ansible_user}}/tigera-operator.yaml
+    mode: "0644"
+    owner: ubuntu
+    group: ubuntu
+
+- name: Installing Tigera Calico Operator
+  shell: kubectl --kubeconfig /home/{{ansible_user}}/.kube/config create -f tigera-operator.yaml
+  any_errors_fatal: true
+
+- name: Installing Tigera Calico custom-resources
+  shell: kubectl --kubeconfig /home/{{ansible_user}}/.kube/config create -f /home/{{ansible_user}}/calico-cr.yaml
+  any_errors_fatal: true
+
+- name: Extract kubeadm join command
+  shell: grep -A2 -B1 "kubeadm join *" /home/{{ansible_user}}/kubeadm-join-command |grep -v -e '^$' >/home/{{ansible_user}}/kubeadm-join-command.sh
+
+- name: Pull down kubeadm-join-command.sh
+  ansible.builtin.fetch:
+    src: /home/{{ansible_user}}/kubeadm-join-command.sh
+    dest: "{{playbook_dir}}/roles/nodes/templates/"
+    flat: yes
+

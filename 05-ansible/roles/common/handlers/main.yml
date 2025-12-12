@@ -1,0 +1,14 @@
+---
+- name: Reload Networking
+  service: 
+    name: "{{ item }}"
+    state: reloaded
+    enabled: yes
+  become: true
+  with_items:
+    - networking
+    
+- name: restart containerd
+  service:
+    name: containerd
+    state: restarted

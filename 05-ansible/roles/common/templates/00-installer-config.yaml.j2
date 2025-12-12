@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# ** # This is the network config written by '{{ ansible_managed }}'.
+
+network:
+  ethernets:
+    ens33:
+      addresses:
+      - {{ ansible_host }}/24
+      nameservers:
+        addresses:
+    {% for dns_server in resolv_nameservers %}
+    - {{ dns_server }}
+    {% endfor %}
+    search: []
+      routes:
+      - to: default
+        via: {{ bridgegateway }}
+  version: 2

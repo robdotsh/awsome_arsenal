@@ -1,0 +1,19 @@
+---
+- name: Fetch /etc/os-release
+  raw: cat /etc/os-release
+  register: os_release
+  changed_when: false
+  check_mode: false
+
+- include_tasks: bootstrap-ubuntu.yml
+  when: '''ID=ubuntu'' in os_release.stdout_lines'
+
+- name: Gather host facts to get ansible_os_family
+  setup:
+    gather_subset: '!all'
+    filter: ansible_*
+
+- name: Assign inventory name to unconfigured hostnames
+  command: "hostnamectl set-hostname {{ inventory_hostname }}"
+  become: true
+

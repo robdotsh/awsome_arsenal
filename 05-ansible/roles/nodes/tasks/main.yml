@@ -1,0 +1,29 @@
+---
+
+- name: Wait for the control plane to become ready
+  wait_for:
+    host: "{{ groups['control_plane'] | map('extract', hostvars, 'ansible_host') | join(',') }}"
+    port: 6443
+    delay: 10
+
+# Upload kubeadm join config
+- name: Upload kubeadm join kubeadm-join-command.sh
+  template:
+      src: "{{ item }}"
+      dest: /home/{{ ansible_user }}/{{ item }}
+      mode: "0755"
+  with_items:
+     - kubeadm-join-command.sh
+  become: true
+
+- name: Check if kubelet.conf exists {{inventory_hostname}}
+  stat:
+    path: "/etc/kubernetes/kubelet.conf"
+  register: kubelet_conf
+  become: true
+
+- name: Run kubeadm join on worker nodes if needed {{inventory_hostname}}
+  command: "sh /home/{{ ansible_user }}/kubeadm-join-command.sh"
+  register: kubeadm_join
+  when: not kubelet_conf.stat.exists
+  become: true

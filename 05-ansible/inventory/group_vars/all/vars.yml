@@ -1,0 +1,45 @@
+# CIDR pool used to assign IP addresses to pods in the cluster
+ClusterCIDR: 10.244.0.0/17
+# CIDR pool / IP range for any services created on Kubernetes
+service_cluster_ip_range: 10.96.0.0/17
+
+default_dnsDomain: "cluster.local"
+# The "clusterDNS" in "KubeletConfiguration."
+cluster_dns_server: 10.96.0.10
+
+# The cgroup driver used by Kubernetes.
+cgroupDriver: systemd
+
+# Version of kubeadm to be installed.
+kubeadm_version: 1.26.0-00
+# Version of Kubernetes.
+kubernetes_version: 1.26.0
+
+# Version of containerd.
+containerd_version: '1.7.2-0ubuntu1~22.04.1'
+
+# Write a default containerd config.toml file.
+containerd_config_default_write: true
+
+# Name of the Kubernetes cluster.
+cluster_name: ndurumo
+# clusterName: kubernetes
+
+# Bootstrap tokens used for joining nodes.
+bootStrapTokens: "drm237.d2012banangamuze"
+
+# IP address of the bridge gateway.
+bridgegateway: 192.168.0.1
+
+# DNS nameservers for resolving DNS queries.
+resolv_nameservers: [192.168.0.1]
+
+dns_servers:
+  - 1.1.1.1
+  # - "{{ bridgegateway }}"
+
+kube_apiserver: 192.168.0.101
+localAPIEndpoint: 192.168.0.101
+
+control_plane_endpoint: 192.168.0.101
+control_plane_ip: 192.168.0.101

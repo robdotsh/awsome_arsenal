@@ -1,0 +1,4 @@
+# This file contains the 'kubeadm join' command for joining worker nodes to the cluster.
+# Run this command on each worker node.
+
+{{ kubeadm_join_command | join(' ') }}

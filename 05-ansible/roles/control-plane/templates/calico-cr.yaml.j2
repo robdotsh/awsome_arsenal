@@ -1,0 +1,43 @@
+# For more information, see: https://docs.projectcalico.org/v3.16/reference/installation/api#operator.tigera.io/v1.Installation
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  # Configures Calico networking.
+  calicoNetwork:
+    bgp: Enabled
+    ipPools:
+    - blockSize: 24
+      cidr: {{ ClusterCIDR }}
+      encapsulation: None
+      natOutgoing: Enabled
+      nodeSelector: all()
+
+---
+
+# This section configures the Calico API server.
+apiVersion: operator.tigera.io/v1
+kind: APIServer
+metadata:
+  name: default
+spec: {}
+
+---
+apiVersion: crd.projectcalico.org/v1
+kind: BGPPeer
+metadata:
+  name: gobgp-peer
+spec:
+  peerIP: gobgp
+  asNumber: 64496
+  nodeSelector: all()
+
+---
+apiVersion: crd.projectcalico.org/v1
+kind: BGPConfiguration
+metadata:
+  name: default
+spec:
+  asNumber: 64496
+  nodeToNodeMeshEnabled: false

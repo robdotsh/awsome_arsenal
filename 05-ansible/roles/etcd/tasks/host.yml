@@ -1,0 +1,26 @@
+---
+
+- name: Download etcd and etcdctl
+  include_tasks: "../../download/tasks/download_file.yml"
+  vars:
+    download: "{{ download_defaults | combine(downloads.etcd) }}"
+  when: etcd_cluster_setup
+  tags:
+    - etcd
+
+- name: Copy etcd and etcdctl binaries
+  ansible.builtin.find:
+    paths: "{{ local_release_dir }}"
+    patterns:
+      - "etcd"
+      - "etcdctl"
+  register: etcd_binaries
+  when: etcd_cluster_setup
+
+- name: Install etcd and etcdctl binaries
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "{{ bin_dir }}/{{ item.path | basename }}"
+    mode: "0755"
+  with_items: "{{ etcd_binaries.files }}"
+  when: etcd_cluster_setup

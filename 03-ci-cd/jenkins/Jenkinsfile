@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo "Compiling source code..."
+                sh 'scripts/build.sh'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo "Running test cases..."
+                sh 'scripts/test.sh'
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                expression { env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master' }
+            }
+            steps {
+                echo "Deploying application..."
+                sh 'scripts/deploy.sh prod'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully."
+        }
+        failure {
+            echo "Pipeline failed. Check logs for details."
+        }
+        always {
+            echo "Pipeline execution finished."
+        }
+    }
+}

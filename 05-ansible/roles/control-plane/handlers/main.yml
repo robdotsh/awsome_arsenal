@@ -1,0 +1,25 @@
+---
+# Handlers for system-related tasks
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+  become: true
+
+- name: Enable Services
+  command: systemctl enable {{ item }}
+  become: true
+  with_items:
+    - containerd
+    - kubelet
+    - kube-proxy
+
+- name: Restart Services
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  become: true
+  with_items:
+    - containerd
+    - kubelet
+    - kube-proxy

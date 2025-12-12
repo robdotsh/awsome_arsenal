@@ -1,0 +1,208 @@
+---
+- name: Create /etc/hosts file
+  template:
+    src: hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  # notify: Reload Networking
+
+- name: Remove Docker, Docker.io, Containerd, and Runc if installed
+  apt:
+    name: "{{ item }}"
+    state: absent
+  become: true
+  ignore_errors: true
+  with_items:
+    - docker
+    - docker.io
+    - containerd
+    - runc
+
+# Ensure required packages are installed
+- name: Check if Python3 is available
+  raw: which python3
+  register: need_bootstrap
+  failed_when: false
+  changed_when: false
+  tags:
+    - facts
+
+- name: Update APT cache for Ubuntu
+  raw: apt-get update --allow-releaseinfo-change
+  become: true
+  when:
+    - "'ID=ubuntu' in os_release.stdout_lines"
+    - "'VERSION_ID=10' in os_release.stdout_lines or 'VERSION_ID=11' in os_release.stdout_lines"
+  register: bootstrap_update_apt_result
+  changed_when: "'changed its' in bootstrap_update_apt_result.stdout or 'value from' in bootstrap_update_apt_result.stdout"
+  ignore_errors: true
+
+- name: Set ansible_python_interpreter
+  set_fact:
+    ansible_python_interpreter: "/usr/bin/python3"
+
+# Disable SWAP for Kubernetes
+- name: Configure netplan for disabling SWAP
+  template:
+    src: 00-installer-config.yaml.j2
+    dest: /etc/netplan/00-installer-config.yaml
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+
+- name: Disable SWAP
+  shell: swapoff -a
+  become: true
+
+- name: Remove SWAP from /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^(?<!#)(.*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+  become: true
+
+- name: Configure resolv.conf
+  template:
+    src: "resolv.conf.j2"
+    dest: "/etc/resolv.conf"
+    mode: "0644"
+  become: true
+
+# sudo apt-get update
+- name: Update repository metadata
+  shell: |
+    sudo apt-get update
+  become: true
+
+- name: Install the OS dependencies - socat conntrack ipset
+  apt:
+    name: "{{ item }}"
+    state: present
+  become: true
+  loop:
+    - socat
+    - conntrack
+    - ipset
+
+- name: Load br_netfilter module
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/modules-load.d/"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - k8s.conf
+  become: true
+
+- name: Load kernel modules
+  command: modprobe {{ item }}
+  loop:
+    - overlay
+    - br_netfilter
+  become: true
+
+- name: Apply sysctl params
+  copy:
+    src: "{{ item.src }}"
+    dest: "/etc/sysctl.d/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - { src: "99-kubernetes-cri.conf", dest: "99-kubernetes-cri.conf" }
+  become: true
+
+- name: Reload sysctl settings
+  command: sysctl --system
+  become: true
+
+- name: Update APT package index
+  apt:
+    update_cache: yes
+  become: true
+
+# - name: Download Kubernetes APT key and Add Kubernetes APT repository
+#   shell: |
+#     sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+#     curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.24/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+#     echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.24/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+#   any_errors_fatal: true
+
+- name: Download Kubernetes APT key and Add Kubernetes APT repository
+  shell: |
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg |
+    sudo gpg --yes --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+  any_errors_fatal: true
+
+- name: Update APT package index (again)
+  apt:
+    update_cache: yes
+
+- name: Remove kubelet, kubeadm, and kubectl
+  apt:
+    name: "{{ item }}"
+    state: absent
+    force: true
+  become: true
+  with_items:
+    - kubeadm
+    - kubelet
+    - kubectl
+  any_errors_fatal: true
+
+- name: Install kubeadm,kubelet and kubectl
+  shell: |
+    sudo apt-get install -y kubelet="{{kubeadm_version}}" kubeadm="{{kubeadm_version}}" kubectl="{{kubeadm_version}}"
+  any_errors_fatal: true
+
+- name: Pin install kubelet, kubeadm and kubectl version
+  shell: apt-mark hold "{{ item }}"
+  with_items:
+    - kubelet
+    - kubeadm
+    - kubectl
+  any_errors_fatal: true
+
+- name: Ensure /etc/containerd directory exists
+  file:
+    path: /etc/containerd/
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Install containerd
+  apt:
+    name: "containerd={{ containerd_version }}"
+    state: present
+  become: true
+
+# Configure containerd
+
+- name: Get containerd default configuration
+  command: containerd config default
+  register: containerd_default_config
+  changed_when: false
+  when: containerd_config_default_write
+
+- name: Copy containerd default configuration to /etc/containerd/config.toml
+  copy:
+    content: "{{ containerd_default_config.stdout }}"
+    dest: /etc/containerd/config.toml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Set containerd to use systemd cgroup driver
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: "SystemdCgroup = false"
+    replace: "SystemdCgroup = true"
+  notify: restart containerd
+  when: containerd_config_default_write

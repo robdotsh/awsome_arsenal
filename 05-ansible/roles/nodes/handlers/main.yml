@@ -1,0 +1,26 @@
+---
+- name: Reload systemd
+  command: systemctl daemon-reload
+  become: true
+
+- name: Enable containerd service
+  command: systemctl enable containerd
+  become: true
+
+- name: Enable kubelet service
+  command: systemctl enable kubelet
+  become: true
+
+- name: Restart containerd service
+  service:
+    name: containerd
+    state: restarted
+    enabled: yes
+  become: true
+
+- name: Restart kubelet service
+  service:
+    name: kubelet
+    state: restarted
+    enabled: yes
+  become: true
