@@ -1,0 +1,24 @@
+---
+- name: Bootstrap Kubernetes Cluster
+  hosts: all
+  become: true
+  vars:
+    k8s_version: "1.25.0"
+
+  roles:
+    - common
+    - control-plane
+    - etcd
+    - nodes
+
+- name: Configure Nodes
+  hosts: nodes
+  become: true
+  tasks:
+    - name: Ensure containers are installed
+      include_role:
+        name: common
+
+    - name: Join Kubernetes cluster
+      command: kubeadm join <CONTROL_PLANE_IP>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash>
+      when: ansible_hostname != "control-plane"
