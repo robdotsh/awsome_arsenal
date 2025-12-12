@@ -22,7 +22,9 @@ jobs:
           expected_dirs=(
             "01-docker/dockerfile-example"
             "01-docker/compose-example"
-            "02-kubernetes/deployments"
+            "02-kubernetes/cluster-autoscaler"
+            "02-kubernetes/open-policy-agent"
+            "02-kubernetes/cert-manager"
             "02-kubernetes/services"
             "02-kubernetes/ingress"
             "03-ci-cd/jenkins"
