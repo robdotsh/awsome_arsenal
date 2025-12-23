@@ -1,0 +1,15 @@
+parameters:
+  - name: environment
+    type: string
+    default: "staging"
+
+jobs:
+  - job: Deploy
+    steps:
+      - script: echo "Deploying to ${{ parameters.environment }}"
+      - task: AzureRmWebAppDeployment@4
+        inputs:
+          azureSubscription: "Azure Subscription"
+          appName: "robdotshApp"
+          package: "$(Build.ArtifactStagingDirectory)/robdotshApp.zip"
+          deploymentMethod: "auto"

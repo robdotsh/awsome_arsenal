@@ -60,3 +60,6 @@ Thumbs.db
 **/*.tmp
 **/terraform/*.plan
 **/terraform/.terraform/
+
+# Ignore any devops token files
+*.azure-devops-token
