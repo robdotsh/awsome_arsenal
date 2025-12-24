@@ -12,7 +12,7 @@ terraform {
 
 provider "aws" {
   profile = var.profile
-  region  = var.region
+  region  = var.aws_region
 
   default_tags {
     tags = merge(

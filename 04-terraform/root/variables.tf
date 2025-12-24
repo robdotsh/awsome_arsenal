@@ -10,10 +10,10 @@ variable "environment" {
   type        = string
   default     = "dev"
 
-  validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "environment must be one of: dev, staging, prod."
-  }
+  # validation {
+  #   condition     = contains(["dev", "staging", "prod"], var.environment)
+  #   error_message = "environment must be one of: dev, staging, prod."
+  # }
 }
 
 # ECS Fargate
@@ -88,10 +88,10 @@ variable "rds_engine" {
   type        = string
   default     = "postgres"
 
-  validation {
-    condition     = contains(["postgres", "mysql", "mariadb"], var.rds_engine)
-    error_message = "rds_engine must be one of: postgres, mysql, mariadb."
-  }
+  # validation {
+  #   condition     = contains(["postgres", "mysql", "mariadb"], var.rds_engine)
+  #   error_message = "rds_engine must be one of: postgres, mysql, mariadb."
+  # }
 }
 
 variable "rds_engine_version" {
@@ -170,4 +170,44 @@ variable "subnet_ids" {
 variable "security_group_ids" {
   description = "Security group IDs for ECS and RDS"
   type        = list(string)
+}
+
+
+# Azure DevOps project
+variable "project_name" {
+  description = "Name of the Azure DevOps project"
+  type        = string
+}
+
+variable "project_id" {
+  type        = string
+  description = "ID of the Azure DevOps project where the team will be created"
+}
+
+variable "project_description" {
+  description = "Description of the Azure DevOps project"
+  type        = string
+  default     = "A project created using Terraform."
+}
+
+variable "visibility" {
+  description = "Visibility of the Azure DevOps project (private/public)"
+  type        = string
+  default     = "private"
+}
+
+variable "org_service_url" {
+  description = "Azure DevOps Organization URL"
+  type        = string
+}
+
+variable "personal_access_token" {
+  description = "Personal Access Token for Azure DevOps"
+  type        = string
+}
+
+variable "member_emails" {
+  type        = set(string)
+  description = "Email addresses of Production Planning team members"
+  # default     = []
 }

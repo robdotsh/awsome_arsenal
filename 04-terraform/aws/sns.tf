@@ -121,7 +121,7 @@ resource "aws_cloudwatch_metric_alarm" "sns_delivery_failures" {
   threshold           = var.sns_alarm_threshold
 
   alarm_actions = [
-    "arn:aws:sns:${var.region}:${data.aws_caller_identity.current.account_id}:${var.alert_topic_name}"
+    "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.alert_topic_name}"
   ]
 
   dimensions = {
