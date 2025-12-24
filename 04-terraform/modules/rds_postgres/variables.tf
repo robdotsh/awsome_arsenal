@@ -4,10 +4,36 @@ variable "allocated_storage" {
   default     = 10
 }
 
-variable "rds_engine_version" {
+variable "rds_engine" {
+  description = "Database engine for RDS"
   type        = string
-  description = "Database engine version (PostgreSQL 13.9)"
+  default     = "postgres"
+
+  validation {
+    condition     = contains(["postgres", "mysql", "mariadb"], var.rds_engine)
+    error_message = "rds_engine must be one of: postgres, mysql, mariadb."
+  }
+}
+
+variable "rds_engine_version" {
+  description = "Database engine version"
+  type        = string
   default     = "13.9"
+
+  validation {
+    condition = (
+      (var.rds_engine == "postgres" && can(regex("^1[3-6]\\.", var.rds_engine_version))) ||
+      (var.rds_engine == "mysql" && can(regex("^8\\.0", var.rds_engine_version))) ||
+      (var.rds_engine == "mariadb" && can(regex("^10\\.", var.rds_engine_version)))
+    )
+    error_message = <<EOT
+rds_engine_version does not match rds_engine.
+Expected:
+- postgres: 13.x–16.x
+- mysql: 8.0.x
+- mariadb: 10.x
+EOT
+  }
 }
 
 variable "instance_class" {
@@ -76,4 +102,10 @@ variable "rds_max_connections" {
   description = "Expected maximum number of DB connections for very low traffic workloads"
   type        = number
   default     = 5
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Common tags to apply to all resources"
+  default     = {}
 }
