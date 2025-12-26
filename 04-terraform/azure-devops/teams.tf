@@ -1,6 +1,6 @@
 # Production Planning Team
-resource "azuredevops_team" "this_team" {
-  project_id  = azuredevops_project.this_project.id
+resource "azuredevops_team" "az_400_team" {
+  project_id  = azuredevops_project.az_400_labs.id
   name        = var.team_name
   description = var.team_description
 }

@@ -1,0 +1,39 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  terraformVersion: "1.0.0"
+  azureServiceConnection: "AZ-400-lab-service-connection"
+
+steps:
+  - task: UseTerraform@0
+    inputs:
+      version: $(terraformVersion)
+
+  - task: AzureKeyVault@2
+    inputs:
+      connectedServiceName: $(azureServiceConnection)
+      keyVaultName: "AZ-400-Lab-Vault-key"
+      secretsFilter: "subscription_id,client_id,client_secret,tenant_id"
+
+  - script: |
+      terraform init
+      terraform plan -out=tfplan
+    displayName: "Terraform Init & Plan"
+
+  - script: |
+      terraform validate
+    displayName: "Terraform Validate"
+
+  # - script: |
+  #     terraform apply -auto-approve tfplan
+  #   displayName: "Terraform Apply"
+
+  - script: |
+      echo "WebApp URL: $(terraform output webapp_url)"
+    displayName: "Output WebApp URL"

@@ -211,3 +211,9 @@ variable "member_emails" {
   description = "Email addresses of Production Planning team members"
   # default     = []
 }
+
+variable "location" {
+  description = "Azure region to create the resource group in"
+  type        = string
+  default     = "West Europe"
+}

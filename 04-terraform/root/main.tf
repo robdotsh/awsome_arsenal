@@ -59,4 +59,5 @@ module "eShopOnWeb_MultiStageYAML" {
   org_service_url       = var.org_service_url
   personal_access_token = var.personal_access_token
   member_emails         = var.member_emails
+  location              = var.location
 }

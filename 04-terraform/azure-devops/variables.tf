@@ -1,12 +1,12 @@
 variable "project_name" {
-  description = "Name of the Azure DevOps project"
+  description = "Name of the Azure DevOps project (AZ-400) labs"
   type        = string
 }
 
 variable "project_description" {
-  description = "Description of the Azure DevOps project"
+  description = "Description of the Azure DevOps project (AZ-400) labs"
   type        = string
-  default     = "A project created using Terraform."
+  default     = "A project created using Terraform for (AZ-400) labs"
 }
 
 variable "visibility" {
@@ -16,7 +16,7 @@ variable "visibility" {
 }
 
 variable "version_control" {
-  description = "The version control system for the project"
+  description = "The version control system for the project (AZ-400) labs"
   type        = string
   default     = "git"
 
@@ -27,7 +27,7 @@ variable "version_control" {
 }
 
 variable "work_item_template" {
-  description = "The template for Azure DevOps work items"
+  description = "The template for Azure DevOps work items (AZ-400) labs"
   type        = string
   default     = "Scrum"
 
@@ -48,41 +48,60 @@ variable "personal_access_token" {
 }
 
 variable "project_id" {
-  type        = string
   description = "ID of the Azure DevOps project where the team will be created"
+  type        = string
 }
 
 variable "team_name" {
-  type        = string
   description = "Name of the Production Planning team"
+  type        = string
   default     = "Production Plannin"
 }
 
 variable "team_description" {
-  type        = string
   description = "Description of the Production Planning team's responsibilities"
+  type        = string
   default     = "Team responsible for planning production operations and new processes"
 }
 
 variable "member_emails" {
-  type        = set(string)
   description = "Email addresses of Production Planning team members"
+  type        = set(string)
   # default     = []
 }
 
 variable "environment" {
-  type        = string
   description = "Environment name (dev, staging, prod)"
+  type        = string
 }
 
 variable "tags" {
-  type        = map(string)
   description = "Common tags to apply across all Azure DevOps resources"
+  type        = map(string)
   default     = {}
 }
 
 variable "CostCenter" {
-  type        = string
   description = "The cost center associated with the resources"
-  default     = "AZ-400"
+  type        = string
+  default     = "AZ-400-labs"
+}
+
+variable "location" {
+  description = "Azure region to create the resource group in (az_400) labs"
+  type        = string
+  default     = "West Europe"
+}
+
+variable "project_tags" {
+  description = "A map of tags for the Azure DevOps project (az_400) labs"
+  type        = map(string)
+  default = {
+    "Environment" = "AzLab400"
+    "Team"        = "AZ-400LabTeam"
+    "Release"     = "v1.0.0"
+    "Priority"    = "High"
+    "SLA"         = "99.9%"
+    "Compliance"  = "GDPR"
+  }
 }
