@@ -1,6 +1,16 @@
-# provider "aws" {
-#   region = var.aws_region
-# }
+# AzureDevOps proj
+module "eShopOnWeb_MultiStageYAML" {
+  source                = "../../04-terraform/azure-devops"
+  environment           = var.environment
+  project_name          = var.project_name
+  project_description   = var.project_description
+  project_id            = var.project_id
+  visibility            = var.visibility
+  org_service_url       = var.org_service_url
+  personal_access_token = var.personal_access_token
+  member_emails         = var.member_emails
+  location              = var.location
+}
 
 # # ECS Fargate
 # module "ecs" {
@@ -47,17 +57,3 @@
 #   hash_key_type = var.dynamodb_hash_key_type
 #   tags          = merge(var.dynamodb_tags, local.common_tags)
 # }
-
-# AzureDevOps proj
-module "eShopOnWeb_MultiStageYAML" {
-  source                = "../../04-terraform/azure-devops"
-  environment           = var.environment
-  project_name          = var.project_name
-  project_description   = var.project_description
-  project_id            = var.project_id
-  visibility            = var.visibility
-  org_service_url       = var.org_service_url
-  personal_access_token = var.personal_access_token
-  member_emails         = var.member_emails
-  location              = var.location
-}

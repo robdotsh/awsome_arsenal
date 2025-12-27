@@ -67,7 +67,6 @@ variable "team_description" {
 variable "member_emails" {
   description = "Email addresses of Production Planning team members"
   type        = set(string)
-  # default     = []
 }
 
 variable "environment" {
@@ -104,4 +103,30 @@ variable "project_tags" {
     "SLA"         = "99.9%"
     "Compliance"  = "GDPR"
   }
+}
+
+variable "client_id" {
+  description = "Azure AD application (service principal) client ID (az_400) labs"
+  type        = string
+  default     = "12345678-1234-1234-1234-123456789abc"
+}
+
+variable "client_secret" {
+  description = "Service principal client secret (az_400) labs"
+  type        = string
+  sensitive   = true
+  default     = "fake-super-secret-password-abc123"
+}
+
+variable "tenant_id" {
+  type        = string
+  description = "Azure AD tenant ID (az_400) labs"
+  default     = "87654321-4321-4321-4321-cba987654321"
+
+}
+
+variable "subscription_id" {
+  type        = string
+  description = "Subscription ID where resources will be deployed (az_400) labs"
+  default     = "11111111-1111-1111-1111-111111111111"
 }

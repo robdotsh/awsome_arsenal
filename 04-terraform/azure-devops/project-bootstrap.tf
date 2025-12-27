@@ -19,14 +19,7 @@ resource "azuredevops_project_features" "az_400_labs_features" {
 resource "azuredevops_project_tags" "az_400_labs" {
   project_id = azuredevops_project.az_400_labs.id
   tags       = [for key, value in var.project_tags : "${key}: ${value}"]
-
-  # tags       = [for key, value in var.project_tags : "${key}: ${value}"]
 }
-
-# resource "azuredevops_project_tags" "this_project" {
-#   project_id = azuredevops_project.this_project.id
-#   tags       = ["AZ-400", "AZ-400-DEMO"]
-# }
 
 # Manages Pipeline Settings for Azure DevOps projects
 

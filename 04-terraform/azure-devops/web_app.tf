@@ -1,3 +1,10 @@
+locals {
+  client_id       = var.client_id
+  client_secret   = var.client_secret
+  tenant_id       = var.tenant_id
+  subscription_id = var.subscription_id
+}
+
 resource "azurerm_resource_group" "az_400_labs" {
   name     = "az-400-labs-rg"
   location = var.location
@@ -34,3 +41,8 @@ resource "azurerm_linux_web_app" "az_400_labs" {
 
   site_config {}
 }
+
+# output "project_url" {
+#   description = "The URL of the Azure DevOps project."
+#   value       = azuredevops_project.az_400_labs.web_url
+# }
