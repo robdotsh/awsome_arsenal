@@ -53,11 +53,11 @@ jobs:
         with:
           args: --severity-threshold=high --sarif-file-output=snyk-os.sarif
 
-      # - name: Upload Snyk Open Source SARIF
-      #   if: always()
-      #   uses: github/codeql-action/upload-sarif@407ffafae6a767df3e0230e3d5f7a5a2c7b37e3d
-      #   with:
-      #     sarif_file: snyk-os.sarif
+      - name: Upload Snyk Open Source SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: snyk-os.sarif
 
       # - name: Initialize CodeQL (SAST)
       #   uses: github/codeql-action/init@407ffafae6a767df3e0230e3d5f7a5a2c7b37e3d
