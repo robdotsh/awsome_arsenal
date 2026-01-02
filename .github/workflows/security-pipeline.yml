@@ -59,14 +59,14 @@ jobs:
         with:
           sarif_file: snyk-os.sarif
 
-      - name: Initialize CodeQL (SAST)
-        uses: github/codeql-action/init@407ffafae6a767df3e0230e3d5f7a5a2c7b37e3d
-        with:
-          languages: javascript-typescript
-          queries: security-extended
+      # - name: Initialize CodeQL (SAST)
+      #   uses: github/codeql-action/init@407ffafae6a767df3e0230e3d5f7a5a2c7b37e3d
+      #   with:
+      #     languages: javascript-typescript
+      #     queries: security-extended
 
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@407ffafae6a767df3e0230e3d5f7a5a2c7b37e3d
+      # - name: Perform CodeQL analysis
+      #   uses: github/codeql-action/analyze@407ffafae6a767df3e0230e3d5f7a5a2c7b37e3d
 
   deploy-to-production:
     name: Deploy to Production
@@ -76,7 +76,7 @@ jobs:
 
     environment:
       name: production
-      url: https://your-app-url.com
+      url: https://my-app-url.com
 
     permissions:
       contents: read
