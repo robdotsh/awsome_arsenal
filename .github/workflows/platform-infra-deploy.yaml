@@ -8,136 +8,159 @@ on:
       - dev
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
 env:
   AWS_REGION: us-east-1
   TF_ROOT: 04-terraform/root
+  TF_LOG: INFO
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
 
 jobs:
-  e2e-deploy:
-    # Skip this job as AWS_ROLE_ARN is not set
-    if: ${{ secrets.AWS_ROLE_ARN != '' }}
+  terraform:
+    name: Terraform ${{ github.ref_name == 'main' && 'Production' || github.ref_name }}
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.ref_name == 'main' && 'prod' || github.ref_name }}
+      # url: https://app.terraform.io # TODO: link to workspace if using HCP TF
 
-    permissions:
-      id-token: write
-      contents: read
+    # Protect production with manual approval
+    if: ${{ github.ref_name == 'main' && github.event_name == 'workflow_dispatch' }}
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Terraform
+      - name: Setup Terraform ${{ env.TF_VERSION }}
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.7.0
+          terraform_version: 1.9.2
 
-      - name: Setup Python
+      - name: Setup Python for migrations
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
-      - name: Configure AWS credentials via OIDC
+      - name: Configure AWS credentials (OIDC)
+        id: creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-${{ github.run_id }}
 
-      - name: Select Terraform Workspace & env file
-        id: envselect
+      - name: Determine environment variables
+        id: env
+        run: |
+          case "${{ github.ref_name }}" in
+            main)    ENV=prod    TFVARS="terraform.tfvars.prod"    ;;
+            staging) ENV=staging TFVARS="terraform.tfvars.staging" ;;
+            *)       ENV=dev     TFVARS="terraform.tfvars.dev"     ;;
+          esac
+
+          echo "env=$ENV"         >> "$GITHUB_OUTPUT"
+          echo "tfvars=$TFVARS"   >> "$GITHUB_OUTPUT"
+          echo "backend_key=$ENV.tfstate" >> "$GITHUB_OUTPUT"
+
+      # Run tf checks
+      - name: Terraform fmt check
+        working-directory: ${{ env.TF_ROOT }}
+        run: terraform fmt -check
+
+      - name: Terraform validate & init
         working-directory: ${{ env.TF_ROOT }}
         run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            WS="prod"
-            ENV_FILE="terraform.tfvars.prod"
-          elif [ "${GITHUB_REF_NAME}" = "staging" ]; then
-            WS="staging"
-            ENV_FILE="terraform.tfvars.staging"
-          else
-            WS="dev"
-            ENV_FILE="terraform.tfvars.dev"
+          terraform init \
+            -backend-config="key=${{ steps.env.outputs.backend_key }}"
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_ROOT }}
+        run: terraform validate
+
+      # TODO: Add tflint / tfsec / infracost / checkov here
+
+      - name: Terraform plan
+        id: plan
+        working-directory: ${{ env.TF_ROOT }}
+        run: |
+          terraform plan \
+            -out=tfplan \
+            -var-file=${{ steps.env.outputs.tfvars }} \
+            -detailed-exitcode || true   # we want exit code 2 = changes
+
+          # Comment plan on PR
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            terraform show -no-color tfplan > plan.txt
           fi
 
-          terraform workspace select "$WS" || terraform workspace new "$WS"
+          echo "has_changes=$(( $(terraform show -json tfplan | jq '.resource_changes | length') > 0 ))" >> "$GITHUB_OUTPUT"
 
-          echo "workspace=$WS" >> "$GITHUB_OUTPUT"
-          echo "env_file=$ENV_FILE" >> "$GITHUB_OUTPUT"
+      # ------------------- Apply only on push to protected branches -------------------
+      - name: Terraform apply
+        if: ${{ steps.plan.outcome == 'success' && steps.plan.outputs.has_changes == 'true' && (github.ref_name == 'main' || github.ref_name == 'staging') }}
+        working-directory: ${{ env.TF_ROOT }}
+        run: terraform apply -auto-approve tfplan
 
-      - name: Terraform Init
-        run: terraform -chdir=${{ env.TF_ROOT }} init \
-          -backend-config="key=${{ steps.envselect.outputs.workspace }}.tfstate"
-
-      - name: Terraform Plan
-        id: plan
-        run: |
-          terraform -chdir=${{ env.TF_ROOT }} plan \
-            -out=tfplan \
-            -var-file=${{ steps.envselect.outputs.env_file }}
-          terraform -chdir=${{ env.TF_ROOT }} show tfplan
-
-      - name: Run PostgreSQL Migrations
-        if: ${{ steps.plan.outcome == 'success' }}
-        run: python3 04-terraform/modules/rds_postgres/postgresql_migration.py
+      # ------------------- Post-apply steps (safer than pre-apply) -------------------
+      - name: Run PostgreSQL migrations (after infra ready)
+        if: ${{ steps.plan.outcome == 'success' && steps.plan.outputs.has_changes == 'true' }}
+        working-directory: 04-terraform/modules/rds_postgres
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: python3 postgresql_migration.py
 
-      - name: Run DynamoDB Migrations
-        if: ${{ steps.plan.outcome == 'success' }}
-        run: python3 04-terraform/modules/dynamodb_table/dynamodb_migration.py
+      - name: Run DynamoDB migrations (after infra ready)
+        if: ${{ steps.plan.outcome == 'success' && steps.plan.outputs.has_changes == 'true' }}
+        working-directory: 04-terraform/modules/dynamodb_table
         env:
           DYNAMODB_TABLE: ${{ secrets.DYNAMODB_TABLE }}
           REGION_NAME: ${{ env.AWS_REGION }}
+        run: python3 dynamodb_migration.py
 
-      - name: Terraform Apply
-        run: terraform -chdir=${{ env.TF_ROOT }} apply -auto-approve tfplan
-
-      - name: ECS Service Health Check
+      # ------------------- ECS Health & basic validation -------------------
+      - name: Wait for ECS service stable & check running tasks
+        if: ${{ steps.plan.outcome == 'success' && steps.plan.outputs.has_changes == 'true' }}
         run: |
           CLUSTER=$(terraform -chdir=${{ env.TF_ROOT }} output -raw ecs_cluster_id)
           SERVICE=$(terraform -chdir=${{ env.TF_ROOT }} output -raw ecs_service_name)
-          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE" --region ${{ env.AWS_REGION }}
 
           RUNNING=$(aws ecs describe-services \
-            --cluster "$CLUSTER" \
-            --services "$SERVICE" \
-            --query "services[0].runningCount" \
-            --output text)
+            --cluster "$CLUSTER" --services "$SERVICE" \
+            --query "services[0].runningCount" --output text)
 
-          if [ "$RUNNING" -lt 1 ]; then
-            echo "ECS service not running!"
+          if [[ "$RUNNING" -lt 1 ]]; then
+            echo "❌ ECS service has no running tasks!"
             exit 1
           fi
 
-      - name: Rollback ECS Service
+      # ------------------- Rollback is tricky → manual or blue/green preferred -------------------
+      #TODO: use ECS blue/green + CodeDeploy for safer zero-downtime rollbacks
+      - name: Rollback instructions (manual fallback)
         if: failure()
         run: |
-          SERVICE_NAME=$(terraform -chdir=${{ env.TF_ROOT }} output -raw ecs_service_name)
-          PREV_TASK_DEF=$(aws ecs list-task-definitions \
-            --family-prefix "$SERVICE_NAME" \
-            --sort DESC \
-            --query "taskDefinitionArns[1]" \
-            --output text)
+          echo "Deployment failed!"
+          echo "Manual rollback options:"
+          echo "1. Revert git commit and push → pipeline will re-apply previous state"
+          echo "2. Use previous task definition (find via aws ecs list-task-definitions)"
+          echo "3. Consider implementing ECS blue/green + CodeDeploy for automatic rollback"
 
-          CLUSTER=$(terraform -chdir=${{ env.TF_ROOT }} output -raw ecs_cluster_id)
-          SERVICE=$(terraform -chdir=${{ env.TF_ROOT }} output -raw ecs_service_name)
-
-          echo "Rolling back service $SERVICE in cluster $CLUSTER to $PREV_TASK_DEF"
-          aws ecs update-service \
-            --cluster "$CLUSTER" \
-            --service "$SERVICE" \
-            --task-definition "$PREV_TASK_DEF"
-
-      - name: Notify Deployment Result
+      - name: Notify result (extend with Slack / Teams)
         if: always()
         run: |
           STATUS="${{ job.status }}"
-          echo "Deployment $STATUS"
-          echo "Environment: ${{ steps.envselect.outputs.workspace }}"
-          echo "ECS Service: $(terraform -chdir=${{ env.TF_ROOT }} output -raw ecs_service_name)"
-          echo "RDS Endpoint: $(terraform -chdir=${{ env.TF_ROOT }} output -raw rds_endpoint)"
-          echo "DynamoDB Table: $(terraform -chdir=${{ env.TF_ROOT }} output -raw dynamodb_table_name)"
-          # Replace these echoes with Slack/Teams/email calls as needed
+          echo "Deployment finished with status: $STATUS"
+          echo "Environment: ${{ steps.env.outputs.env }}"
+          #TODO: Add real notification here (slack, teams, etc.)
