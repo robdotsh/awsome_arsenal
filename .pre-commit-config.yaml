@@ -3,6 +3,6 @@ repos:
     hooks:
       - id: terraform-name-underscores
         name: Terraform object names must use underscores
-        entry: ../miscellaneous/toolbox/check_terraform_names.sh
+        entry: miscellaneous/toolbox/check_terraform_names.sh
         language: system
         files: \.tf$
