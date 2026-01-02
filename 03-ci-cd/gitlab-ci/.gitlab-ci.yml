@@ -1,0 +1,60 @@
+stages:
+  - package-management
+  - source-scanning
+  - deploy
+
+package-management:
+  stage: package-management
+  image: node:20
+  script:
+    - npm ci
+    - npm audit --audit-level=high
+  dependencies: []
+  artifacts:
+    reports:
+      dependency_scanning: gl-dependency-scanning-report.json
+  variables:
+    DEPENDENCY_SCANNING_LEVEL: high
+    LICENSE_COMPLIANCE: true
+
+include:
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/License-Scanning.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+source-scanning:
+  stage: source-scanning
+  image: node:20
+  script:
+    - npm run build
+  dependencies:
+    - package-management
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+      secret_detection: gl-secret-detection-report.json
+  variables:
+    SAST_EXCLUDED_ANALYZERS: ""
+    SECRET_DETECTION_HISTORIC_SCAN: "true"
+
+# sonar-scan:
+#   stage: source-scanning
+#   image: sonarsource/sonar-scanner-cli
+#   script:
+#     - sonar-scanner
+#       -Dsonar.projectKey=your_project_key
+#       -Dsonar.sources=.
+#       -Dsonar.host.url=https://sonarcloud.io
+#       -Dsonar.login=$SONAR_TOKEN
+#   variables:
+#     SONAR_TOKEN: $SONAR_TOKEN
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Passed Security Scan - Ready for Production Deployment"
+  when: manual
+  environment: production
+  only:
+    - main

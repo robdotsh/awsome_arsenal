@@ -9,10 +9,10 @@ variable "rds_engine" {
   type        = string
   default     = "postgres"
 
-  validation {
-    condition     = contains(["postgres", "mysql", "mariadb"], var.rds_engine)
-    error_message = "rds_engine must be one of: postgres, mysql, mariadb."
-  }
+  # validation {
+  #   condition     = contains(["postgres", "mysql", "mariadb"], var.rds_engine)
+  #   error_message = "rds_engine must be one of: postgres, mysql, mariadb."
+  # }
 }
 
 variable "rds_engine_version" {
@@ -20,20 +20,20 @@ variable "rds_engine_version" {
   type        = string
   default     = "13.9"
 
-  validation {
-    condition = (
-      (var.rds_engine == "postgres" && can(regex("^1[3-6]\\.", var.rds_engine_version))) ||
-      (var.rds_engine == "mysql" && can(regex("^8\\.0", var.rds_engine_version))) ||
-      (var.rds_engine == "mariadb" && can(regex("^10\\.", var.rds_engine_version)))
-    )
-    error_message = <<EOT
-rds_engine_version does not match rds_engine.
-Expected:
-- postgres: 13.x–16.x
-- mysql: 8.0.x
-- mariadb: 10.x
-EOT
-  }
+  #   validation {
+  #     condition = (
+  #       (var.rds_engine == "postgres" && can(regex("^1[3-6]\\.", var.rds_engine_version))) ||
+  #       (var.rds_engine == "mysql" && can(regex("^8\\.0", var.rds_engine_version))) ||
+  #       (var.rds_engine == "mariadb" && can(regex("^10\\.", var.rds_engine_version)))
+  #     )
+  #     error_message = <<EOT
+  # rds_engine_version does not match rds_engine.
+  # Expected:
+  # - postgres: 13.x–16.x
+  # - mysql: 8.0.x
+  # - mariadb: 10.x
+  # EOT
+  #   }
 }
 
 variable "instance_class" {

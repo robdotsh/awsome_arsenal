@@ -1,19 +1,16 @@
 # Production Planning Team
-resource "azuredevops_team" "production_planning" {
-  project_id  = azurerm_devops_project.manufacturing.id
-  name        = var.production_planning_team_name
-  description = var.production_planning_team_description
-
-  tags = merge(var.tags, {
-    TeamType    = "ProductionPlanning"
-    Environment = "Production"
-    ManagedBy   = "TF"
-  })
+resource "azuredevops_team" "az_400_team" {
+  project_id  = azuredevops_project.az_400_labs.id
+  name        = var.team_name
+  description = var.team_description
 }
 
-resource "azuredevops_team_member" "production_planning_members" {
-  for_each = toset(var.member_emails)
+# resource "azuredevops_team_members" "production_planning_members" {
+#   project_id = azuredevops_team.this_team.project_id
+#   team_id    = azuredevops_team.this_team.id
+#   mode       = "overwrite"
 
-  team_id   = azuredevops_team.production_planning.id
-  principal = each.value
-}
+#   members = [
+#     for email in var.member_emails : email
+#   ]
+# }
