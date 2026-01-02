@@ -26,10 +26,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v4
 
       - name: Setup Node.js 20 (LTS)
-        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -38,9 +38,9 @@ jobs:
         run: npm ci
 
       - name: Dependency Review (GitHub built-in)
-        uses: actions/dependency-review-action@0f14d84e337b0e8b4a3a5f4d8d8c2c8b3e6d5a2c
+        uses: actions/dependency-review-action@v4
         continue-on-error: true
-
+        
       - name: npm audit (high and critical only)
         run: npm audit --audit-level=high --production
         continue-on-error: true
