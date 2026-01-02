@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Setup Node.js 20 (LTS)
-        uses: actions/setup-node@1e60e59c7a2086d3d41dd76d7edbc48b4328e2f7
+        uses: actions/setup-node@65d868f8d4d85d7d4abb7de0875cde3fcc8798f5
         with:
           node-version: "20"
           cache: "npm"
