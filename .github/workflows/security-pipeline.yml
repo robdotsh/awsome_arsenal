@@ -40,7 +40,7 @@ jobs:
       - name: Dependency Review (GitHub built-in)
         uses: actions/dependency-review-action@v4
         continue-on-error: true
-        
+
       - name: npm audit (high and critical only)
         run: npm audit --audit-level=high --production
         continue-on-error: true
@@ -84,10 +84,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@1e60e59c7a2086d3d41dd76d7edbc48b4328e2f7
+        uses: actions/setup-node@v6.1.0
         with:
           node-version: "20"
 
@@ -99,12 +99,10 @@ jobs:
 
       - name: Deploy to production
         env:
-          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           echo "Deploying to production..."
-          # Replace with your actual deployment commands
-          # Example: aws s3 sync ... or vercel deploy ... or ecs update-service ...
 
       - name: Deployment successful notification
         if: success()
