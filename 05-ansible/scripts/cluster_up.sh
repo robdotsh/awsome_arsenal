@@ -4,16 +4,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Prompt the user for the Ansible sudo password
-# read -r -s -p "Enter the Ansible sudo password: " sudo_pass
+# Prompt for the Ansible sudo password securely (input is hidden)
+read -r -s -p "Enter the Ansible sudo password: " sudo_pass
+echo " " 
 
-# Create infrastructure and inventory file
-echo "Creating infrastructure"
+# Add your infrastructure creation commands here
+echo "Creating infrastructure..."
 
-##Run Ansible playbooks
-echo "Ansible provisioning"
-ansible-playbook -i inventory/inventory.ini cluster.yml\
-  --private-key="~/.ssh/id_rsa"\
-  -u ubuntu\
-  --extra-vars "ansible_sudo_pass=Password"
-  # --extra-vars "ansible_sudo_pass=$sudo_pass"
+echo "Running Ansible provisioning..."
+
+# Run the Ansible playbook
+ansible-playbook -i inventory/inventory.ini cluster.yml \
+  --private-key="${HOME}/.ssh/id_rsa" \
+  -u ubuntu \
+  --become \
+  --become-method=sudo \
+  --extra-vars "ansible_become_password=$sudo_pass"
